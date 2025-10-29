@@ -19,8 +19,6 @@ jobs:
         image: postgres:9.6
         env:
           POSTGRES_PASSWORD: postgres
-          POSTGRES_USER: postgres
-          POSTGRES_DB: blog_development
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -30,7 +28,7 @@ jobs:
           - 5432:5432
 
     env:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/blog_development
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
           
     steps:
       - name: Checkout code
