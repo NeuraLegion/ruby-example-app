@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:9.6
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: blog_development
+    ports:
+      - "5432:5432"
+
+  app:
+    build: .
+    depends_on:
+      - db
+    environment:
+      RAILS_ENV: development
+      PGHOST: db
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGPORT: 5432
+      PGDATABASE: blog_development
+    ports:
+      - "3000:3000"
+    command: >
+      /bin/sh -c "until bundle exec ruby -e \"require 'pg'; PG.connect(host: ENV['PGHOST'], port: (ENV['PGPORT'] || '5432').to_i, dbname: ENV['PGDATABASE'] || 'postgres', user: ENV['PGUSER'], password: ENV['PGPASSWORD']);\"; do
+      echo 'Waiting for postgres...'; sleep 2; done &&
+      bundle exec rake db:create db:migrate db:seed &&
+      bundle exec rails server -b 0.0.0.0"
