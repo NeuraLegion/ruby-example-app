@@ -35,20 +35,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "2.3.3"
-
       - name: Install system deps
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
-            build-essential \
-            libpq-dev \
-            libxml2-dev \
-            libxslt1-dev \
-            nodejs \
-            zlib1g-dev
+              build-essential \
+              libffi-dev \
+              libgdbm-dev \
+              libpq-dev \
+              libreadline-dev \
+              libssl-dev \
+              libxml2-dev \
+              libxslt1-dev \
+              nodejs \
+              libyaml-dev \
+              zlib1g-dev
+
+      - name: Install Ruby 2.3.3
+        env:
+          RUBY_PREFIX: /opt/ruby-2.3.3
+        run: |
+          git clone --depth=1 https://github.com/rbenv/ruby-build.git /tmp/ruby-build
+          /tmp/ruby-build/install.sh
+          ruby-build 2.3.3 "$RUBY_PREFIX"
+          echo "$RUBY_PREFIX/bin" >> "$GITHUB_PATH"
 
       - name: Install bundler
         run: gem install bundler -v 1.10.6
