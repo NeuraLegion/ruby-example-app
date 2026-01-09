@@ -10,7 +10,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: ruby:2.3
+      image: buildpack-deps:buster
     services:
       postgres:
         image: postgres:9.6
