@@ -21,17 +21,18 @@ jobs:
         ports:
           - 5432:5432
         options: >-
+          --name postgres
           --health-cmd "pg_isready -U postgres"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
     env:
-      PGHOST: localhost
+      PGHOST: postgres
       PGPORT: 5432
       PGUSER: postgres
       PGPASSWORD: postgres
       PGDATABASE: blog_development
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/blog_development
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/blog_development
     steps:
       - uses: actions/checkout@v4
 
@@ -78,10 +79,10 @@ jobs:
       - name: Wait for postgres
         run: |
           for i in $(seq 1 30); do
-            bundle exec ruby -e "require 'pg'; PG.connect(host: ENV['PGHOST'], port: ENV['PGPORT'].to_i, dbname: ENV['PGDATABASE'], user: ENV['PGUSER'], password: ENV['PGPASSWORD']);" && exit 0
+            pg_isready -h "$PGHOST" -p "$PGPORT" -d "$PGDATABASE" && break
             sleep 2
           done
-          exit 1
+          bundle exec ruby -e "require 'pg'; PG.connect(host: ENV['PGHOST'], port: ENV['PGPORT'].to_i, dbname: ENV['PGDATABASE'], user: ENV['PGUSER'], password: ENV['PGPASSWORD']);"
 
       - name: Setup database
         run: bundle exec rake db:create db:migrate db:seed
