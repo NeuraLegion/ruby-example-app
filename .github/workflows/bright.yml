@@ -119,6 +119,11 @@ jobs:
           BRIGHT_PROJECT_ID: dhSq9jPULmyZnndTYVtd6o
           BRIGHT_TOKEN: ${{ env.BRIGHT_TOKEN }}
 
+      - name: Retrieve OIDC token for BrightSec
+        run: |
+          OIDC_TOKEN=$(curl -sS -H "Authorization: ***" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=development.playground.brightsec.com" | jq -r '.value')
+          echo "BRIGHT_TOKEN=$OIDC_TOKEN" >> $GITHUB_ENV
+
       - name: Run security tests
         env:
           BRIGHT_HOSTNAME: development.playground.brightsec.com
