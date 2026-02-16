@@ -84,10 +84,6 @@ jobs:
       - name: Setup database
         run: bundle exec rake db:create db:migrate db:seed
 
-      - name: Install tini
-        run: |
-          apt-get update && apt-get install -y tini
-
       - name: Start server
         env:
           DATABASE_URL: postgres://postgres:postgres@postgres:5432/blog_development
@@ -97,22 +93,11 @@ jobs:
           PGPORT: 5432
           PGUSER: postgres
         run: |
-          tini -- bundle exec rails server -b 0.0.0.0 -p 3000 >rails.log 2>&1 &
-
-      - name: Output Rails server log
-        run: |
-          echo '===== rails.log (tail) ====='
-          tail -n 50 rails.log || echo 'rails.log not found'
+          bundle exec rails server -b 0.0.0.0 -p 3000 >rails.log 2>&1 &
 
       - name: Wait for server readiness
         run: |
           for i in {1..30}; do curl -sS -o /dev/null http://127.0.0.1:3000 && exit 0 || sleep 5; done; exit 1
-
-      - name: Output Rails server log on failure
-        if: failure()
-        run: |
-          echo '===== rails.log ====='
-          cat rails.log || echo 'rails.log not found'
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
