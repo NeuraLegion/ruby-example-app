@@ -114,11 +114,9 @@ jobs:
 
       - name: Retrieve OIDC token for BrightSec
         id: oidc
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const token = await github.rest.actions.getOIDCToken();
-            core.setOutput('token', token.data.value);
+        run: |
+          OIDC_TOKEN=$(curl -sS -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=development.playground.brightsec.com" | jq -r '.value')
+          echo "token=$OIDC_TOKEN" >> $GITHUB_OUTPUT
 
       - name: Authenticate with Bright
         env:
