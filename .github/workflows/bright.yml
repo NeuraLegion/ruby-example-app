@@ -64,7 +64,8 @@ jobs:
               postgresql-client \
               nodejs \
               libyaml-dev \
-              zlib1g-dev
+              zlib1g-dev \
+              jq
 
       - name: Install Ruby 2.3.3
         env:
