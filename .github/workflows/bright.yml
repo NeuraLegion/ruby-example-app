@@ -117,7 +117,7 @@ jobs:
         with:
           BRIGHT_HOSTNAME: development.playground.brightsec.com
           BRIGHT_PROJECT_ID: dhSq9jPULmyZnndTYVtd6o
-          BRIGHT_TOKEN: ${{ secrets.BRIGHT_TOKEN }}
+          BRIGHT_TOKEN: ${{ env.BRIGHT_TOKEN }}
 
       - name: Run security tests
         env:
