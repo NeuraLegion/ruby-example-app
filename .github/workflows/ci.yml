@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: buildpack-deps:buster
+    defaults:
+      run:
+        shell: bash
     services:
       postgres:
         image: postgres:9.6
