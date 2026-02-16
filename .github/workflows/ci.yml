@@ -54,6 +54,7 @@ jobs:
               libssl-dev \
               libxml2-dev \
               libxslt1-dev \
+              postgresql-client \
               nodejs \
               libyaml-dev \
               zlib1g-dev
