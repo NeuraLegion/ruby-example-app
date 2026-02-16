@@ -84,6 +84,10 @@ jobs:
       - name: Setup database
         run: bundle exec rake db:create db:migrate db:seed
 
+      - name: Install tini
+        run: |
+          apt-get update && apt-get install -y tini
+
       - name: Start server
         env:
           DATABASE_URL: postgres://postgres:postgres@postgres:5432/blog_development
@@ -93,7 +97,7 @@ jobs:
           PGPORT: 5432
           PGUSER: postgres
         run: |
-          bundle exec rails server -b 0.0.0.0 -p 3000 >rails.log 2>&1 &
+          tini -- bundle exec rails server -b 0.0.0.0 -p 3000 >rails.log 2>&1 &
 
       - name: Wait for server readiness
         run: |
