@@ -40,6 +40,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Demo loop difference (container shell)
+        run: |
+          echo "Shell executable (\$0): $0"
+          echo "SHELL env: ${SHELL:-<unset>}"
+          if [ -n "${BASH_VERSION:-}" ]; then
+            echo "BASH_VERSION: $BASH_VERSION"
+          else
+            echo "BASH_VERSION: <unset> (likely not bash)"
+          fi
+          if command -v ps >/dev/null 2>&1; then
+            echo "Process command: $(ps -p $$ -o comm= 2>/dev/null || echo '<unknown>')"
+          fi
+          if [ -e "/proc/$$/exe" ]; then
+            echo "Process executable: $(readlink /proc/$$/exe 2>/dev/null || echo '<unknown>')"
+          fi
+
+          brace_count=0
+          for i in {1..5}; do
+            brace_count=$((brace_count + 1))
+            echo "brace item: $i"
+          done
+          echo "brace loop iterations: $brace_count"
+
+          seq_count=0
+          for i in $(seq 1 5); do
+            seq_count=$((seq_count + 1))
+            echo "seq item: $i"
+          done
+          echo "seq loop iterations: $seq_count"
+
       - name: Point apt to Debian archive
         run: |
           sed -i 's|deb.debian.org/debian|archive.debian.org/debian|g' /etc/apt/sources.list
