@@ -1,6 +1,7 @@
 class PostsController < ApplicationController
   before_action :confirm_logged_in
   before_action :set_post, only: [:show, :edit, :update, :destroy]
+  before_action :verify_authenticity_token, only: [:search]
 
   # GET /posts
   # GET /posts.json
