@@ -29,7 +29,14 @@ class PostsController < ApplicationController
 
   def search
     # Ensure CSRF protection is applied to all actions
-    verify_authenticity_token
+    if request.get?
+      # CSRF protection is not typically applied to GET requests, but we can add additional checks
+      # Check the referer header to ensure the request is coming from the same origin
+      unless request.referer && URI.parse(request.referer).host == request.host
+        render plain: "Forbidden", status: :forbidden
+        return
+      end
+    end
 
     if current_user.admin?
       @search_results = Post.where("posts.content::text LIKE ?", "%#{params[:search_term]}%")
