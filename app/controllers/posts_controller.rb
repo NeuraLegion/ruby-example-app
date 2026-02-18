@@ -1,6 +1,7 @@
 class PostsController < ApplicationController
   before_action :confirm_logged_in
   before_action :set_post, only: [:show, :edit, :update, :destroy]
+  protect_from_forgery with: :exception
 
   # GET /posts
   # GET /posts.json
@@ -27,11 +28,20 @@ class PostsController < ApplicationController
   end
 
   def search
-    # http://localhost:3000/posts/search?search_term=t%25%27%3Bselect%20*%20from%20users%3B%20--
+    # Ensure CSRF protection is applied to all actions
+    if request.get?
+      # CSRF protection is not typically applied to GET requests, but we can add additional checks
+      # Check the referer header to ensure the request is coming from the same origin
+      unless request.referer && URI.parse(request.referer).host == request.host
+        render plain: "Forbidden", status: :forbidden
+        return
+      end
+    end
+
     if current_user.admin?
-      @search_results = Post.where("posts.content::text LIKE '%#{params[:search_term]}%'")
+      @search_results = Post.where("posts.content::text LIKE ?", "%#{params[:search_term]}%")
     else
-      @search_results = Post.where("posts.content::text LIKE '%#{params[:search_term]}%' AND posts.public=true")
+      @search_results = Post.where("posts.content::text LIKE ? AND posts.public=true", "%#{params[:search_term]}%")
     end
   end
 
