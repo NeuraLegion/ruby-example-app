@@ -1,0 +1,124 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: buildpack-deps:buster
+    defaults:
+      run:
+        shell: bash
+    services:
+      postgres:
+        image: postgres:9.6
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: blog_development
+        ports:
+          - 5432:5432
+        options: >-
+          --name postgres
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: blog_development
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/blog_development
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Point apt to Debian archive
+        run: |
+          sed -i 's|deb.debian.org/debian|archive.debian.org/debian|g' /etc/apt/sources.list
+          sed -i 's|security.debian.org/debian-security|archive.debian.org/debian-security|g' /etc/apt/sources.list
+          sed -i '/buster-updates/d' /etc/apt/sources.list
+
+      - name: Install system deps
+        run: |
+          apt-get -o Acquire::Check-Valid-Until=false -o Acquire::AllowInsecureRepositories=true update
+          apt-get -o Acquire::Check-Valid-Until=false -o Acquire::AllowInsecureRepositories=true install -y --no-install-recommends \
+              build-essential \
+              libffi-dev \
+              libgdbm-dev \
+              libpq-dev \
+              libreadline-dev \
+              libssl-dev \
+              libxml2-dev \
+              libxslt1-dev \
+              postgresql-client \
+              nodejs \
+              libyaml-dev \
+              zlib1g-dev
+
+      - name: Install Ruby 2.3.3
+        env:
+          RUBY_PREFIX: /opt/ruby-2.3.3
+        run: |
+          git clone --depth=1 https://github.com/rbenv/ruby-build.git /tmp/ruby-build
+          /tmp/ruby-build/install.sh
+          ruby-build 2.3.3 "$RUBY_PREFIX"
+          echo "$RUBY_PREFIX/bin" >> "$GITHUB_PATH"
+
+      - name: Install bundler
+        run: gem install bundler -v 1.10.6
+
+      - name: Configure bundler for nokogiri
+        run: bundle config build.nokogiri --use-system-libraries
+
+      - name: Install gems
+        run: bundle install
+
+      - name: Wait for postgres
+        run: |
+          for i in $(seq 1 30); do
+            pg_isready -h "$PGHOST" -p "$PGPORT" -d "$PGDATABASE" && break
+            sleep 2
+          done
+          bundle exec ruby -e "require 'pg'; PG.connect(host: ENV['PGHOST'], port: ENV['PGPORT'].to_i, dbname: ENV['PGDATABASE'], user: ENV['PGUSER'], password: ENV['PGPASSWORD']);"
+
+      - name: Setup database
+        run: bundle exec rake db:create db:migrate db:seed
+
+      - name: Start server
+        run: |
+          bundle exec rails server -b 0.0.0.0 -p 3000 >rails.log 2>&1 &
+
+      - name: Wait for server readiness
+        run: |
+          READY=0
+          for i in $(seq 1 30); do
+            echo "Attempt ${i}/30: checking http://localhost:3000"
+            if curl -sSfL http://localhost:3000 >/dev/null; then
+              echo "Server responded successfully on attempt ${i}."
+              READY=1
+              break
+            fi
+            echo "Server still starting up, waiting 2s before retry."
+            sleep 2
+          done
+          if [ "$READY" -ne 1 ]; then
+            echo "Server failed to start"
+            tail -n 200 rails.log || true
+            exit 1
+          fi
+          echo "Server is ready; last 200 lines of rails.log:"
+          tail -n 200 rails.log || true
+
+      - name: Check homepage
+        run: |
+          if ! curl -sSfL http://localhost:3000 | grep -F "Home"; then
+            echo "Homepage check failed"
+            exit 1
+          fi
