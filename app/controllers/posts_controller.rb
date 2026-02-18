@@ -28,7 +28,9 @@ class PostsController < ApplicationController
   end
 
   def search
-    # http://localhost:3000/posts/search?search_term=t%25%27%3Bselect%20*%20from%20users%3B%20--
+    # Ensure CSRF protection is applied to all actions
+    verify_authenticity_token
+
     if current_user.admin?
       @search_results = Post.where("posts.content::text LIKE ?", "%#{params[:search_term]}%")
     else
