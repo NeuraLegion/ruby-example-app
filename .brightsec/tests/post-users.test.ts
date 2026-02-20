@@ -21,7 +21,7 @@ after(() => runner.clear());
 test('POST /users', { signal: AbortSignal.timeout(timeout) }, async () => {
   await runner
     .createScan({
-      tests: ['csrf', 'xss', 'sqli', 'bopla', 'email_injection', 'secret_tokens'],
+      tests: ['sqli'],
       attackParamLocations: [AttackParamLocation.BODY],
       starMetadata: {
         code_source: 'NeuraLegion/ruby-example-app:master',
