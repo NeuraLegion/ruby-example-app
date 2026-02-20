@@ -99,7 +99,7 @@ jobs:
           PGUSER: postgres
         run: |
           mkdir -p tmp
-          bundle exec rails server -e development -b 0.0.0.0 -p 3000 &
+          bundle exec rails server -e development -b 0.0.0.0 -p 3000 > tmp/rails-server.log 2>&1 &
 
       - name: Probe application readiness
         run: |
