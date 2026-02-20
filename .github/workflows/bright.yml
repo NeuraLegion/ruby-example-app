@@ -98,19 +98,12 @@ jobs:
           PGPORT: 5432
           PGUSER: postgres
         run: |
-          mkdir -p tmp log
-          : > tmp/rails-server.log
-          bundle exec rails server -e development -b 0.0.0.0 -p 3000 > tmp/rails-server.log 2>&1 &
-          echo $! > tmp/rails-server.pid
+          mkdir -p tmp
+          bundle exec rails server -e development -b 0.0.0.0 -p 3000 &
 
       - name: Probe application readiness
         run: |
-          for i in {1..30}; do
-            curl -sS -o /dev/null http://127.0.0.1:3000 && exit 0 || sleep 5
-          done
-          echo "Application readiness probe failed. Last server log lines:"
-          tail -n 200 tmp/rails-server.log || true
-          exit 1
+          for i in {1..30}; do curl -sS -o /dev/null http://127.0.0.1:3000 && exit 0 || sleep 5; done; exit 1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -139,26 +132,3 @@ jobs:
           SECTESTER_SCAN_POOL_SIZE: ${{ vars.SECTESTER_SCAN_POOL_SIZE }}
         run: |
           node --experimental-transform-types --experimental-strip-types --experimental-detect-module --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --test-force-exit --test-concurrency=4 --test .brightsec/tests/*.test.ts
-
-      - name: Dump Rails logs
-        if: ${{ always() }}
-        run: |
-          echo "===== tmp/rails-server.log ====="
-          if [ -f tmp/rails-server.log ]; then
-            cat tmp/rails-server.log
-          else
-            echo "tmp/rails-server.log not found"
-          fi
-          echo "===== log/development.log ====="
-          if [ -f log/development.log ]; then
-            cat log/development.log
-          else
-            echo "log/development.log not found"
-          fi
-
-      - name: Stop application
-        if: ${{ always() }}
-        run: |
-          if [ -f tmp/rails-server.pid ]; then
-            kill "$(cat tmp/rails-server.pid)" || true
-          fi
