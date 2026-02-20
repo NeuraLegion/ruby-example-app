@@ -98,8 +98,7 @@ jobs:
           PGPORT: 5432
           PGUSER: postgres
         run: |
-          mkdir -p tmp
-          bundle exec rails server -e development -b 0.0.0.0 -p 3000 > tmp/rails-server.log 2>&1 &
+          bundle exec rails server -e development -b 0.0.0.0 -p 3000 > rails.log 2>&1 &
 
       - name: Probe application readiness
         run: |
