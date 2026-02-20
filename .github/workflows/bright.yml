@@ -89,6 +89,8 @@ jobs:
 
       - name: Start application
         env:
+          RAILS_ENV: development
+          RACK_ENV: development
           DATABASE_URL: postgres://postgres:postgres@postgres:5432/blog_development
           PGDATABASE: blog_development
           PGHOST: postgres
@@ -96,7 +98,7 @@ jobs:
           PGPORT: 5432
           PGUSER: postgres
         run: |
-          bundle exec rails server -b 0.0.0.0 -p 3000 &
+          bundle exec rails server -e development -b 0.0.0.0 -p 3000 &
 
       - name: Probe application readiness
         run: |
