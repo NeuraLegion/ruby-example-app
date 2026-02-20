@@ -93,7 +93,8 @@ jobs:
 
       - name: Start server
         run: |
-          bundle exec rails server -b 0.0.0.0 -p 3000 >rails.log 2>&1 &
+          mkdir -p tmp
+          bundle exec rails server -e development -b 0.0.0.0 -p 3000 > tmp/rails-server.log 2>&1 &
 
       - name: Wait for server readiness
         run: |
@@ -110,11 +111,11 @@ jobs:
           done
           if [ "$READY" -ne 1 ]; then
             echo "Server failed to start"
-            tail -n 200 rails.log || true
+            tail -n 200 tmp/rails-server.log || true
             exit 1
           fi
-          echo "Server is ready; last 200 lines of rails.log:"
-          tail -n 200 rails.log || true
+          echo "Server is ready; last 200 lines of tmp/rails-server.log:"
+          tail -n 200 tmp/rails-server.log || true
 
       - name: Check homepage
         run: |
