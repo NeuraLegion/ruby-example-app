@@ -4,7 +4,10 @@ class User < ActiveRecord::Base
   validates :email, presence: true , length: {minimum: 2}
   validates :password, presence: true, length: {minimum: 2}
 
-  def has_secure_password
-    true
+  has_secure_password
+
+  def self.update_user(id, user_params)
+    user = find(id)
+    user.update(user_params)
   end
 end
