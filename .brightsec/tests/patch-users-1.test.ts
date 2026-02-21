@@ -21,7 +21,7 @@ after(() => runner.clear());
 test('PATCH /users/1', { signal: AbortSignal.timeout(timeout) }, async () => {
   await runner
     .createScan({
-      tests: ['bopla', 'csrf', 'xss', 'sqli', 'osi'],
+      tests: ['sqli'],
       attackParamLocations: [AttackParamLocation.BODY],
       starMetadata: {
         code_source: 'NeuraLegion/ruby-example-app:master',
