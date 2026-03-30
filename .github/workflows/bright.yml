@@ -1,0 +1,151 @@
+name: Bright
+on:
+  pull_request:
+    branches:
+      - '**'
+permissions:
+  checks: write
+  contents: read
+  id-token: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: buildpack-deps:buster
+    defaults:
+      run:
+        shell: bash .github/scripts/bright-step-repair-shell.sh {0}
+    services:
+      postgres:
+        image: postgres:9.6
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: blog_development
+        ports:
+          - 5432:5432
+        options: >-
+          --name postgres --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      CI_AGENT_BASE_URL: https://hk4kznt3-8081.euw.devtunnels.ms/
+      CI_AGENT_RUN_ID: ${{ github.run_id }}
+      CI_AGENT_REPOSITORY: ${{ github.repository }}
+      CI_AGENT_WORKFLOW_BRANCH: ${{ github.head_ref }}
+      CI_AGENT_JOB_NAME: test
+      CI_AGENT_WORKFLOW_ATTEMPT: ${{ github.run_attempt }}
+      CI_AGENT_DEBUG: ${{ vars.CI_AGENT_DEBUG }}
+      CI_AGENT_READINESS_STEP_NAME: Probe application readiness
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: blog_development
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/blog_development
+    steps:
+      - uses: actions/checkout@v4
+      - name: Point apt to Debian archive
+        run: |
+          sed -i 's|deb.debian.org/debian|archive.debian.org/debian|g' /etc/apt/sources.list
+          sed -i 's|security.debian.org/debian-security|archive.debian.org/debian-security|g' /etc/apt/sources.list
+          sed -i '/buster-updates/d' /etc/apt/sources.list
+        env:
+          CI_AGENT_STEP_NAME: Point apt to Debian archive
+          CI_AGENT_STEP_INDEX: "2"
+      - name: Install system deps
+        run: |
+          apt-get -o Acquire::Check-Valid-Until=false -o Acquire::AllowInsecureRepositories=true update
+          apt-get -o Acquire::Check-Valid-Until=false -o Acquire::AllowInsecureRepositories=true install -y --no-install-recommends \
+              build-essential \
+              libffi-dev \
+              libgdbm-dev \
+              libpq-dev \
+              libreadline-dev \
+              libssl-dev \
+              libxml2-dev \
+              libxslt1-dev \
+              postgresql-client \
+              nodejs \
+              libyaml-dev \
+              zlib1g-dev
+        env:
+          CI_AGENT_STEP_NAME: Install system deps
+          CI_AGENT_STEP_INDEX: "3"
+      - name: Install Ruby 2.3.3
+        env:
+          CI_AGENT_STEP_NAME: Install Ruby 2.3.3
+          CI_AGENT_STEP_INDEX: "4"
+          RUBY_PREFIX: /opt/ruby-2.3.3
+        run: |
+          git clone --depth=1 https://github.com/rbenv/ruby-build.git /tmp/ruby-build
+          /tmp/ruby-build/install.sh
+          ruby-build 2.3.3 "$RUBY_PREFIX"
+          echo "$RUBY_PREFIX/bin" >> "$GITHUB_PATH"
+      - name: Install bundler
+        run: gem install bundler -v 1.10.6
+        env:
+          CI_AGENT_STEP_NAME: Install bundler
+          CI_AGENT_STEP_INDEX: "5"
+      - name: Configure bundler for nokogiri
+        run: bundle config build.nokogiri --use-system-libraries
+        env:
+          CI_AGENT_STEP_NAME: Configure bundler for nokogiri
+          CI_AGENT_STEP_INDEX: "6"
+      - name: Install gems
+        run: bundle install
+        env:
+          CI_AGENT_STEP_NAME: Install gems
+          CI_AGENT_STEP_INDEX: "7"
+      - name: Setup database
+        run: bundle exec rake db:create db:migrate db:seed
+        env:
+          CI_AGENT_STEP_NAME: Setup database
+          CI_AGENT_STEP_INDEX: "8"
+      - name: Start application
+        env:
+          CI_AGENT_STEP_NAME: Start application
+          CI_AGENT_STEP_INDEX: "9"
+          DATABASE_URL: postgres://postgres:postgres@postgres:5432/blog_development
+          PGDATABASE: blog_development
+          PGHOST: postgres
+          PGPASSWORD: postgres
+          PGPORT: 5432
+          PGUSER: postgres
+          secret_key_base: secret
+        run: |
+          bundle exec rails server -b 0.0.0.0 -p 3000 &
+      - name: Probe application readiness
+        run: |
+          i=1; while [ "$i" -le 30 ]; do curl -sS -o /dev/null http://127.0.0.1:3000 && exit 0; sleep 5; i=$((i + 1)); done; exit 1
+        env:
+          CI_AGENT_STEP_NAME: Probe application readiness
+          CI_AGENT_STEP_INDEX: "10"
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+      - name: Install SecTesterJS dependencies
+        run: |
+          npm i --save=false --prefix .brightsec @sectester/core@0.50.0 @sectester/repeater@0.50.0 @sectester/scan@0.50.0 @sectester/runner@0.50.0 @sectester/reporter@0.50.0
+        env:
+          CI_AGENT_STEP_NAME: Install SecTesterJS dependencies
+          CI_AGENT_STEP_INDEX: "12"
+      - name: Authenticate with Bright
+        uses: ./.github/workflows/composite/configure-bright-credentials
+        with:
+          BRIGHT_HOSTNAME: development.playground.brightsec.com
+          BRIGHT_PROJECT_ID: 5naKKxNc3e4Akp1GuEdmiK
+          BRIGHT_TOKEN: ${{ secrets.BRIGHT_TOKEN }}
+          CUSTOM_BRIGHT_TOKEN: ${{ secrets.CUSTOM_BRIGHT_TOKEN }}
+      - name: Run security tests
+        env:
+          CI_AGENT_STEP_NAME: Run security tests
+          CI_AGENT_STEP_INDEX: "14"
+          BRIGHT_HOSTNAME: development.playground.brightsec.com
+          BRIGHT_PROJECT_ID: 5naKKxNc3e4Akp1GuEdmiK
+          BRIGHT_AUTH_ID: m8XBzLrw8pWSjHQDhKQgCr
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRIGHT_TOKEN: ${{ env.BRIGHT_TOKEN }}
+          BRIGHT_TARGET_URL: http://127.0.0.1:3000
+          SECTESTER_SCAN_POOL_SIZE: ${{ vars.SECTESTER_SCAN_POOL_SIZE }}
+        run: |-
+          node --experimental-transform-types --experimental-strip-types --experimental-detect-module --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --test-force-exit --test-concurrency=4 --test .brightsec/tests/*.test.ts
