@@ -1,0 +1,51 @@
+$ docker build -t bright-harness-local -f Dockerfile.harness .
+
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.harness
+#1 transferring dockerfile: 1.14kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/ruby:2.3
+#2 DONE 0.7s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 96B done
+#3 DONE 0.0s
+
+#4 [internal] load build context
+#4 transferring context: 11.26kB done
+#4 DONE 0.0s
+
+#5 [1/6] FROM docker.io/library/ruby:2.3@sha256:78cc821d95c48621e577b6b0d44c9d509f0f2a4e089b9fd0ca2ae86f274773a8
+#5 resolve docker.io/library/ruby:2.3@sha256:78cc821d95c48621e577b6b0d44c9d509f0f2a4e089b9fd0ca2ae86f274773a8 0.0s done
+#5 DONE 0.0s
+
+#6 [2/6] WORKDIR /app
+#6 CACHED
+
+#7 [4/6] COPY Gemfile Gemfile.lock* ./
+#7 CACHED
+
+#8 [3/6] RUN sed -ri 's|deb.debian.org/debian|archive.debian.org/debian|g; s|security.debian.org/debian-security|archive.debian.org/debian-security|g' /etc/apt/sources.list     && sed -ri '/stretch-updates/d' /etc/apt/sources.list     && printf 'Acquire::Check-Valid-Until "false";\nAcquire::AllowInsecureRepositories "true";\n' > /etc/apt/apt.conf.d/99archive-no-check     && apt-get update     && apt-get install -y --allow-unauthenticated --no-install-recommends         build-essential         patch         libpq-dev         libxml2-dev         libxslt1-dev     && rm -rf /var/lib/apt/lists/*
+#8 CACHED
+
+#9 [5/6] RUN gem install bundler:1.10.6     && bundle _1.10.6_ config set without 'development test'     && bundle _1.10.6_ config build.nokogiri --use-system-libraries     && bundle _1.10.6_ install --jobs 4 --retry 3
+#9 CACHED
+
+#10 [6/6] COPY . /app
+#10 DONE 0.0s
+
+#11 exporting to image
+#11 exporting layers 0.0s done
+#11 exporting manifest sha256:da70565ecad808a93b4a19f8cc0df035b7b45cbebb17824a9aa3152159fdebf6 done
+#11 exporting config sha256:9470e0cc6eee481f33cbf0e903c64b3cf6121788ce9cd78d6734c8f9e956019d done
+#11 exporting attestation manifest sha256:5531181a0df44bc103fd2e1029dbcd17aabbb7393026990f51181838a3a83e70 done
+#11 exporting manifest list sha256:e3bd7d77e5486f342de2aa28b004331b532ba2b0e187394846b14cfedfec83b8 done
+#11 naming to docker.io/library/bright-harness-local:latest done
+#11 unpacking to docker.io/library/bright-harness-local:latest done
+#11 DONE 0.1s
+
+View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/cbb0kh45ktbheaj3u0995bd2m
+
+[exit code=0 signal=null]
