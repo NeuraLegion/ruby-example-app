@@ -1,0 +1,33 @@
+FROM ruby:2.3
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    APP_HOME=/app \
+    BUNDLE_PATH=/usr/local/bundle \
+    BUNDLE_WITHOUT=development:test
+
+WORKDIR /app
+
+RUN sed -ri 's|deb.debian.org/debian|archive.debian.org/debian|g; s|security.debian.org/debian-security|archive.debian.org/debian-security|g' /etc/apt/sources.list \
+    && sed -ri '/stretch-updates/d' /etc/apt/sources.list \
+    && printf 'Acquire::Check-Valid-Until "false";\nAcquire::AllowInsecureRepositories "true";\n' > /etc/apt/apt.conf.d/99archive-no-check \
+    && apt-get update \
+    && apt-get install -y --allow-unauthenticated --no-install-recommends \
+        build-essential \
+        patch \
+        libpq-dev \
+        libxml2-dev \
+        libxslt1-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY Gemfile Gemfile.lock* ./
+
+RUN gem install bundler:1.10.6 \
+    && bundle _1.10.6_ config set without 'development test' \
+    && bundle _1.10.6_ config build.nokogiri --use-system-libraries \
+    && bundle _1.10.6_ install --jobs 4 --retry 3
+
+COPY . /app
+
+EXPOSE 3001
+
+CMD ["bundle", "exec", "ruby", "bright_harness.rb"]
