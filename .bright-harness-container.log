@@ -1,0 +1,5 @@
+bright_harness.rb:193: syntax error, unexpected keyword_rescue, expecting keyword_end
+rescue StandardError => e
+      ^
+
+[exit code=1 signal=null]
